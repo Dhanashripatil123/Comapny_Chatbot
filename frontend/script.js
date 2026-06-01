@@ -1,6 +1,6 @@
 // Frontend script for Company Chatbot
 // Handles user input, sends messages to backend, and displays responses dynamically
-
+ 
 const input = document.querySelector("#input");
 const chatContainer = document.querySelector("#chatcontainer");
 const askBtn = document.querySelector("#ask");
@@ -52,15 +52,21 @@ function removeLoader() {
 
 // Send message to server
 async function callServer(message) {
-  const response = await fetch("https://genai-1-4oxq.onrender.com/chat", {
+  const response = await fetch(`${window.API_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ threadId, message })
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Server error");
+    let errorMessage = "Server error";
+
+try {
+  const errorData = await response.json();
+  errorMessage = errorData.message || errorMessage;
+} catch (e) {}
+
+throw new Error(errorMessage);
   }
 
   const data = await response.json();

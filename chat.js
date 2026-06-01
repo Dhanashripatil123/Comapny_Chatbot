@@ -4,6 +4,7 @@ import { vectorStore } from './prepare.js';
 import fs from "fs";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+console.log("Loaded:", process.env.GROQ_API_KEY?.slice(0,4));
  
 function loadMemory() {
     if (!fs.existsSync("memory.json")) {
@@ -27,7 +28,11 @@ export async function chat() {
         output: process.stdout
     });
 
-    let conversationHistory = loadMemory();
+   
+    let conversationHistory = [];
+    if (!process.env.GROQ_API_KEY) {
+  throw new Error("GROQ_API_KEY is missing in environment variables");
+}
 
     while (true) {
 

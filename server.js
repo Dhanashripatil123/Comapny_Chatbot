@@ -3,7 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Groq from "groq-sdk";
-import { vectorStore } from './prepare.js';
+
+import { initVectorStore } from './prepare.js';
 import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -78,6 +79,7 @@ app.post('/api/chat', async(req,res) => {
          conversationMemories[threadId] = [];
        }
 
+       const vectorStore = await initVectorStore();
        const relevantChunks = await vectorStore.similaritySearch(message, 3);
        const context = relevantChunks
          .map(chunk => chunk.pageContent)

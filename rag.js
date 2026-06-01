@@ -15,7 +15,16 @@
 
 import { indexTheDocument } from "./prepare.js";
 
-const filePath ='./Company_chatbot.pdf';
+const filePath = "./Company_chatbot.pdf";
 
+async function run() {
+  try {
+    await indexTheDocument(filePath);
+    console.log("Indexing completed");
+  } catch (err) {
+    console.error("Indexing failed:", err.message);
+  }
+}
 
-indexTheDocument(filePath);
+// Run only when explicitly called
+run();

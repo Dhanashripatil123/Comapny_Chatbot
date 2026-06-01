@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port =  process.env.PORT || 3000;
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.GOOGLE_API_KEY });
 
 function loadMemory() {
     if (!fs.existsSync("memory.json")) {

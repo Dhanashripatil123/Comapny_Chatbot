@@ -8,7 +8,7 @@ import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const port =  process.env.PORT || "https://genai-1-4oxq.onrender.com";
+const port =  process.env.PORT || 3000;
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY});
 

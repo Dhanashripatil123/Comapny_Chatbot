@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("API_URL not defined");
     }
 
-    const response = await fetch("https://genai-tsy7.onrender.com/api/chat", {
+    const response = await fetch("https://genai-tsy7.onrender.com/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ threadId, message }),

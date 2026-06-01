@@ -22,6 +22,10 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+if (!process.env.GROQ_API_KEY) {
+  console.warn("Warning: GROQ_API_KEY is not set. Groq API calls will fail until it's configured.");
+}
+
 // 🔥 IMPORTANT: change this to your FRONTEND URL
 const allowedOrigins = [
   "http://localhost:5173",
@@ -111,7 +115,14 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // vector search
-    const vectorStore = await initVectorStore();
+    let vectorStore;
+    try {
+      vectorStore = await initVectorStore();
+    } catch (err) {
+      console.error("Vector store initialization failed:", err?.message || err);
+      return res.status(500).json({ message: "Vector store initialization failed" });
+    }
+
     const relevantChunks = await vectorStore.similaritySearch(message, 3);
 
     const context = relevantChunks
@@ -138,15 +149,21 @@ Answer:
     });
 
     // call Groq
-    const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...conversationMemories[threadId]
-      ],
-    });
+    let completion;
+    try {
+      completion = await groq.chat.completions.create({
+        model: "openai/gpt-oss-20b",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...conversationMemories[threadId]
+        ],
+      });
+    } catch (err) {
+      console.error("Groq completion error:", err?.message || err);
+      return res.status(502).json({ message: "AI completion failed" });
+    }
 
-    const reply = completion.choices[0].message.content;
+    const reply = completion?.choices?.[0]?.message?.content || "";
 
     // store assistant reply
     conversationMemories[threadId].push({
@@ -175,6 +192,21 @@ app.use(express.static(path.join(__dirname, "frontend")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+
+
+// Return JSON for CORS errors
+app.use((err, req, res, next) => {
+  if (err && err.message && err.message.includes("CORS")) {
+    return res.status(403).json({ message: "CORS origin denied" });
+  }
+  next(err);
+});
+
+// Generic JSON error handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(err?.status || 500).json({ message: err?.message || "Internal server error" });
 });
 
 

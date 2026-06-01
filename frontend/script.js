@@ -43,20 +43,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function callServer(message) {
-    if (!window.API_URL) {
-      throw new Error("API_URL not defined");
-    }
+    const apiUrl = window.API_URL || "/api/chat";
 
-    const response = await fetch("https://genai-tsy7.onrender.com/chat", {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ threadId, message }),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (parseError) {
+      data = { message: text || response.statusText };
+    }
 
     if (!response.ok) {
-      throw new Error(data.message || "Server error");
+      throw new Error(data.message || response.statusText || "Server error");
     }
 
     return data.message;

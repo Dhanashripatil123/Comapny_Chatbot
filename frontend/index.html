@@ -39,15 +39,11 @@
     </div>
   </div>
 
-  <!-- ✅ CLEAN API CONFIG (FIXED) -->
+  <!-- ✅ FRONTEND API CONFIG -->
   <script>
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    window.API_URL = isLocalhost
-      ? "http://localhost:5000/api/chat"
-      : "https://genai-tsy7.onrender.com/api/chat";
+    // Use same-origin API route by default. This works when the Express server
+    // serves both the frontend and backend from the same host.
+    window.API_URL = "/api/chat";
   </script>
 
   <script src="./script.js"></script>

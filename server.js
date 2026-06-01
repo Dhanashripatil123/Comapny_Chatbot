@@ -3,8 +3,11 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import dotenv from "dotenv";
 import Groq from "groq-sdk";
 import { initVectorStore } from "./prepare.js";
+
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,8 +25,12 @@ const groq = new Groq({
 // 🔥 IMPORTANT: change this to your FRONTEND URL
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "http://localhost:3000",
-  "https://genai-1-4oxq.onrender.com"
+  "http://127.0.0.1:3000",
+  "https://genai-1-4oxq.onrender.com",
+  "https://genai-tsy7.onrender.com",
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((u) => u.trim()).filter(Boolean) : []),
 ];
 
 // =====================

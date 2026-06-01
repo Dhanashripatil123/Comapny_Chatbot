@@ -28,7 +28,7 @@ function saveMemory(memory) {
 let conversationMemories = loadMemory();
 
 // CORS configuration: allow specific origins via ALLOWED_ORIGINS env var (comma-separated)
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,https://genai-1-4oxq.onrender.com').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
   origin: function(origin, callback) {
     // allow non-browser or curl requests with no origin

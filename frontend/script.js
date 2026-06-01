@@ -52,7 +52,7 @@ function removeLoader() {
 
 // Send message to server
 async function callServer(message) {
-  const response = await fetch("https://genai-tsy7.onrender.com/chat", {
+  const response = await fetch("https://genai-1-4oxq.onrender.com/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ threadId, message })

@@ -52,7 +52,7 @@ function removeLoader() {
 
 // Send message to server
 async function callServer(message) {
-  const response = await fetch(`${window.API_URL}/chat`, {
+  const response = await fetch(`${window.API_URL}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ threadId, message })

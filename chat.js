@@ -3,7 +3,7 @@ import Groq from "groq-sdk";
 import { vectorStore } from './prepare.js';
 import fs from "fs";
 
-const groq = new Groq({ apiKey: process.env. GROQ_API_KEY});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
  
 function loadMemory() {
     if (!fs.existsSync("memory.json")) {
@@ -45,7 +45,7 @@ export async function chat() {
 
         const SYSTEM_PROMPT = `
 You are a helpful assistant.
-Use the retrieved context if relevant.
+
 
 `;
 

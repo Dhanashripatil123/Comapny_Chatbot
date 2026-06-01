@@ -51,6 +51,15 @@
     </div>
   </div>
 
+  <script>
+    // Configure API URL for frontend. In dev use localhost backend, otherwise use relative path or injected value.
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      window.API_URL = 'https://genai-1-4oxq.onrender.com';
+    } else {
+      // If you host frontend and backend separately, set window.APP_API_URL on the page or replace below
+      window.API_URL = window.APP_API_URL ? window.APP_API_URL.replace(/\/$/, '') + '/api/chat' : '/api/chat';
+    }
+  </script>
   <script src="./script.js"></script>
 </body>
 </html>

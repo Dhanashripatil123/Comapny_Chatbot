@@ -1,164 +1,177 @@
-import express from 'express';
-import cors from 'cors';  
-import path from 'path';
-import { fileURLToPath } from 'url';
-import Groq from "groq-sdk";
-
-import { initVectorStore } from './prepare.js';
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import fs from "fs";
+import Groq from "groq-sdk";
+import { initVectorStore } from "./prepare.js";
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const app = express();
-const port =  process.env.PORT || 3000;
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY});
+// =====================
+// CONFIG
+// =====================
 
-function loadMemory() {
-    if (!fs.existsSync("memory.json")) {
-        fs.writeFileSync("memory.json", "{}");
-        return {};
-    }
-    const data = fs.readFileSync("memory.json", "utf-8");
-    return JSON.parse(data);
-}
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-function saveMemory(memory) {
-    fs.writeFileSync("memory.json", JSON.stringify(memory, null, 2));
-}
+// 🔥 IMPORTANT: change this to your FRONTEND URL
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://genai-1-4oxq.onrender.com"
+];
 
-let conversationMemories = loadMemory();
+// =====================
+// MIDDLEWARE
+// =====================
 
-// CORS configuration: allow specific origins via ALLOWED_ORIGINS env var (comma-separated)
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
-  origin: function(origin, callback) {
-    // allow non-browser or curl requests with no origin
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
   },
-  methods: 'GET,POST,PUT,DELETE,OPTIONS',
-  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
 app.use(express.json());
 
-// simple request logger to help debugging
+// Logger
 app.use((req, res, next) => {
-  console.log(new Date().toISOString(), req.method, req.path);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// --- API routes (define before static files) ---
+// =====================
+// MEMORY SYSTEM
+// =====================
 
-// Helpful GET handler so visiting /chat in a browser doesn't show "Cannot GET /chat".
-app.get('/api/chat', (req, res) => {
-  res.json({ message: 'This endpoint accepts POST requests with JSON: {threadId, message}. Use the chat UI or POST to /api/chat' });
+function loadMemory() {
+  if (!fs.existsSync("memory.json")) {
+    fs.writeFileSync("memory.json", "{}");
+    return {};
+  }
+  return JSON.parse(fs.readFileSync("memory.json", "utf-8"));
+}
+
+function saveMemory(memory) {
+  fs.writeFileSync("memory.json", JSON.stringify(memory, null, 2));
+}
+
+let conversationMemories = loadMemory();
+
+// =====================
+// ROUTES
+// =====================
+
+// Health check
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
 });
 
-app.post('/api/chat', async(req,res) => {
-     const {message,threadId} = req.body;
-    
-     //todo: validate the field
-     if(!message || !threadId){
-       res.status(400).json({message:'all fields are required'}); 
-      return;
-     }
-     
-     console.log('message',message,"threadId",threadId);
+// API info
+app.get("/api/chat", (req, res) => {
+  res.json({
+    message: "Use POST /api/chat with { message, threadId }"
+  });
+});
 
-     // Fail fast if API key is missing to avoid downstream HTML/errors
-     if (!process.env.GROQ_API_KEY) {
-       console.error('Missing GROQ_API_KEY in environment');
-       return res.status(500).json({ message: 'Server misconfiguration: missing GROQ_API_KEY' });
-     }
+// CHAT API
+app.post("/api/chat", async (req, res) => {
+  const { message, threadId } = req.body;
 
-     try{
-       if (!conversationMemories[threadId]) {
-         conversationMemories[threadId] = [];
-       }
+  if (!message || !threadId) {
+    return res.status(400).json({
+      message: "message and threadId are required"
+    });
+  }
 
-       const vectorStore = await initVectorStore();
-       const relevantChunks = await vectorStore.similaritySearch(message, 3);
-       const context = relevantChunks
-         .map(chunk => chunk.pageContent)
-         .join('\n\n');
+  if (!process.env.GROQ_API_KEY) {
+    return res.status(500).json({
+      message: "Missing GROQ_API_KEY"
+    });
+  }
 
-       const SYSTEM_PROMPT = `
-You are a helpful assistant.
-Use the retrieved context if relevant.
+  try {
+    // init memory
+    if (!conversationMemories[threadId]) {
+      conversationMemories[threadId] = [];
+    }
 
+    // vector search
+    const vectorStore = await initVectorStore();
+    const relevantChunks = await vectorStore.similaritySearch(message, 3);
+
+    const context = relevantChunks
+      .map(c => c.pageContent)
+      .join("\n\n");
+
+    const SYSTEM_PROMPT = `
+You are a helpful AI assistant.
+Use context if relevant.
+Keep answers clear and short.
 `;
 
-       const userQuery = `
+    const userQuery = `
 Question: ${message}
-Relevant Context: ${context}
+Context:
+${context}
 Answer:
 `;
 
-       conversationMemories[threadId].push({
-         role: "user",
-         content: userQuery
-       });
+    // store user message
+    conversationMemories[threadId].push({
+      role: "user",
+      content: userQuery
+    });
 
-       const completion = await groq.chat.completions.create({
-         model: "openai/gpt-oss-20b",
-         messages: [
-           { role: "system", content: SYSTEM_PROMPT },
-           ...conversationMemories[threadId]
-         ],
-       });
+    // call Groq
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...conversationMemories[threadId]
+      ],
+    });
 
-       const reply = completion.choices[0].message.content;
+    const reply = completion.choices[0].message.content;
 
-       conversationMemories[threadId].push({
-         role: "assistant",
-         content: reply
-       });
+    // store assistant reply
+    conversationMemories[threadId].push({
+      role: "assistant",
+      content: reply
+    });
 
-       saveMemory(conversationMemories);
+    saveMemory(conversationMemories);
 
-       res.json({message: reply});
-     }catch(err){
-       console.error(err);
-       // If upstream (Groq) returns auth error, forward a clear JSON message
-       if (err && err.status === 401) {
-         const upstreamMsg = err.error && err.error.error && err.error.error.message ? err.error.error.message : 'Invalid API Key';
-         return res.status(502).json({ message: `Upstream error: ${upstreamMsg}` });
-       }
-       res.status(500).json({message:'Internal server error'});
-     }
-     
-});
+    return res.json({ message: reply });
 
-// Serve frontend static assets after API routes
-app.use(express.static(path.join(__dirname, 'frontend')));
+  } catch (err) {
+    console.error("Chat error:", err);
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-});
-
-// (duplicate POST /chat removed) - API is now exposed at POST /api/chat
-
-const server = app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-});
-
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use.`, err);
-    process.exit(1);
-  } else {
-    console.error('Server error:', err);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
   }
 });
 
-// Global error handler to ensure JSON responses for API routes
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  if (req.path && req.path.startsWith('/api') || req.path === '/chat') {
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-  next(err);
+// =====================
+// STATIC FRONTEND
+// =====================
+
+app.use(express.static(path.join(__dirname, "frontend")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+
+
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });

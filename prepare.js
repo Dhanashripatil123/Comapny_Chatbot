@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// ❌ FIX 1: Validate env variables
+
 if (!process.env.PINECONE_API_KEY || !process.env.PINECONE_INDEX_NAME) {
   throw new Error("Missing Pinecone environment variables");
 }

@@ -1,5 +1,6 @@
 {
   "name": "company_chatbot",
+  "proxy": "https://genai-1-4oxq.onrender.com/api/chat",
   "version": "1.0.0",
   "description": "this company chatbot",
   "license": "ISC",

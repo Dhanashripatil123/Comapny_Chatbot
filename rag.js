@@ -26,5 +26,5 @@ async function run() {
   }
 }
 
-// Run only when explicitly called
+
 run();

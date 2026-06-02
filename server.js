@@ -14,9 +14,7 @@ const port = process.env.PORT || 3000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// =====================
-// CONFIG
-// =====================
+
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -26,7 +24,7 @@ if (!process.env.GROQ_API_KEY) {
   console.warn("Warning: GROQ_API_KEY is not set. Groq API calls will fail until it's configured.");
 }
 
-// 🔥 IMPORTANT: change this to your FRONTEND URL
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -37,9 +35,7 @@ const allowedOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((u) => u.trim()).filter(Boolean) : []),
 ];
 
-// =====================
-// MIDDLEWARE
-// =====================
+
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -58,9 +54,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// =====================
-// MEMORY SYSTEM
-// =====================
+
 
 function loadMemory() {
   if (!fs.existsSync("memory.json")) {
@@ -76,9 +70,7 @@ function saveMemory(memory) {
 
 let conversationMemories = loadMemory();
 
-// =====================
-// ROUTES
-// =====================
+
 
 // Health check
 app.get("/", (req, res) => {

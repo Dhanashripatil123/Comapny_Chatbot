@@ -23,10 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function createBotMessage(text) {
+    const safeText = text || "No response received";
+
     chatContainer.innerHTML += `
       <div class="text-left mb-4">
         <span class="bg-gray-700 px-4 py-2 rounded-lg inline-block">
-          ${marked.parse(text)}
+          ${marked.parse(safeText)}
         </span>
       </div>`;
   }

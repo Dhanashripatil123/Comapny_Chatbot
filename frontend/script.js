@@ -23,15 +23,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function createBotMessage(text) {
-    const safeText = text || "No response received";
+  console.log("createBotMessage received:", text);
 
-    chatContainer.innerHTML += `
-      <div class="text-left mb-4">
-        <span class="bg-gray-700 px-4 py-2 rounded-lg inline-block">
-          ${marked.parse(safeText)}
-        </span>
-      </div>`;
-  }
+  const safeText =
+    text === undefined || text === null
+      ? "No response received from server"
+      : String(text);
+
+  chatContainer.innerHTML += `
+    <div class="text-left mb-4">
+      <span class="bg-gray-700 px-4 py-2 rounded-lg inline-block">
+        ${marked.parse(safeText)}
+      </span>
+    </div>`;
+}
 
   function showLoader() {
     chatContainer.innerHTML += `
